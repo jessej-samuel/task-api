@@ -8,8 +8,12 @@
   </head>
   <body>
     <form action="http://localhost:5000/tasks" method="post">
-      <input type="text" name="title" />
-      <input type="text" name="description" />
+      <label for="title"
+        >Title <input type="text" id="title" name="title"
+      /></label>
+      <label for="description"
+        >Description <input type="text" id="description" name="description"
+      /></label>
       <button type="submit">Add</button>
     </form>
   </body>
