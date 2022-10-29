@@ -28,6 +28,26 @@ const getTasks = async () => {
   return tasks;
 };
 
+const getTasksByDeadline = async (deadline) => {
+  const tasks = await prisma.task.findMany({
+    where: {
+      deadline: {
+        lte: new Date(deadline),
+      },
+    },
+  });
+  return tasks;
+};
+
+const getTaskById = async (id) => {
+  const task = await prisma.task.findUnique({
+    where: {
+      id: parseInt(id),
+    },
+  });
+  return task;
+};
+
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true,
@@ -56,6 +76,18 @@ app.get("/tasks", (req, res) => {
     .catch((err) => console.log(err));
 });
 
+app.get("/tasks/:id", (req, res) => {
+  getTaskById(parseInt(req.params.id))
+    .then((task) => {
+      res.status(200);
+      res.json(task);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(404);
+    });
+});
+
 app.post("/tasks/new", async (req, res) => {
   const { title, deadline } = req.body;
   await createTask(title, deadline)
@@ -68,6 +100,32 @@ app.post("/tasks/new", async (req, res) => {
     .catch(async (e) => {
       console.error(e);
       await prisma.$disconnect();
+    });
+});
+
+app.get("/tasks/deadline/:deadline", (req, res) => {
+  const { deadline } = req.params;
+  getTasksByDeadline(deadline)
+    .then((tasks) => {
+      res.status(200);
+      res.json(tasks);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500);
+    });
+});
+
+app.get("/tasks/deadline/today", (req, res) => {
+  const today = new Date();
+  getTasksByDeadline(today)
+    .then((tasks) => {
+      res.status(200);
+      res.json(tasks);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500);
     });
 });
 
