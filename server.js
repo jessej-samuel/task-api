@@ -48,6 +48,41 @@ const getTaskById = async (id) => {
   return task;
 };
 
+const getDeadlineToday = async () => {
+  const tasks = await prisma.task.findMany({
+    where: {
+      deadline: {
+        // Get tasks whose deadline is today
+        gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        lte: new Date(new Date().setHours(23, 59, 59, 999)),
+      },
+    },
+  });
+  return tasks;
+};
+
+const getOverdueTasks = async () => {
+  const tasks = await prisma.task.findMany({
+    where: {
+      deadline: {
+        lt: new Date(new Date().setHours(0, 0, 0, 0)),
+      },
+    },
+  });
+  return tasks;
+};
+
+const getFutureTasksByDeadline = async () => {
+  const tasks = await prisma.task.findMany({
+    where: {
+      deadline: {
+        gt: new Date(),
+      },
+    },
+  });
+  return tasks;
+};
+
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true,
@@ -103,9 +138,8 @@ app.post("/tasks/new", async (req, res) => {
     });
 });
 
-app.get("/tasks/deadline/:deadline", (req, res) => {
-  const { deadline } = req.params;
-  getTasksByDeadline(deadline)
+app.get("/tasks/deadline/today", (req, res) => {
+  getDeadlineToday()
     .then((tasks) => {
       res.status(200);
       res.json(tasks);
@@ -116,9 +150,33 @@ app.get("/tasks/deadline/:deadline", (req, res) => {
     });
 });
 
-app.get("/tasks/deadline/today", (req, res) => {
-  const today = new Date();
-  getTasksByDeadline(today)
+app.get("/tasks/deadline/overdue", (req, res) => {
+  getOverdueTasks()
+    .then((tasks) => {
+      res.status(200);
+      res.json(tasks);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500);
+    });
+});
+
+app.get("/tasks/deadline/future", (req, res) => {
+  getFutureTasksByDeadline(req.query.deadline)
+    .then((tasks) => {
+      res.status(200);
+      res.json(tasks);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500);
+    });
+});
+
+app.get("/tasks/deadline/:deadline", (req, res) => {
+  const { deadline } = req.params;
+  getTasksByDeadline(deadline)
     .then((tasks) => {
       res.status(200);
       res.json(tasks);
