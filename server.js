@@ -8,12 +8,17 @@ import bodyParser from "body-parser";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-const createTask = async (title) => {
+const createTask = async (title, deadline) => {
+  if (!deadline) {
+    deadline = new Date();
+    deadline.setDate(deadline.getDate() + 7); // give one week time to finish task
+  }
+
   await prisma.task.create({
     data: {
       title: title,
       created: new Date(),
-      deadline: new Date(),
+      deadline: new Date(deadline),
     },
   });
 };
@@ -24,12 +29,16 @@ const getTasks = async () => {
 };
 
 const corsOptions = {
-  origin: "*",
+  origin: "http://localhost:3000",
   credentials: true,
   optionSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  console.log(req.method, req.ip, req.path, res.statusCode);
+  next();
+});
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -40,13 +49,16 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/tasks", (req, res) => {
   getTasks()
-    .then((tasks) => res.json(tasks))
+    .then((tasks) => {
+      res.status(200);
+      res.json(tasks);
+    })
     .catch((err) => console.log(err));
 });
 
-app.post("/tasks", async (req, res) => {
-  const { title } = req.body;
-  await createTask(title)
+app.post("/tasks/new", async (req, res) => {
+  const { title, deadline } = req.body;
+  await createTask(title, deadline)
     .then(async () => {
       getTasks()
         .then((tasks) => res.json(tasks))
@@ -56,11 +68,8 @@ app.post("/tasks", async (req, res) => {
     .catch(async (e) => {
       console.error(e);
       await prisma.$disconnect();
-      process.exit(1);
     });
 });
-
-app.get()
 
 app.listen(PORT, () => {
   console.log("Server is running at", PORT);
